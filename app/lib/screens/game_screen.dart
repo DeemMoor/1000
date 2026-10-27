@@ -701,37 +701,9 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Future<void> _playCard(Card card) async {
-    final r = controller.round;
-    var declare = false;
-    if (r.canDeclareWith(me, card)) {
-      final ace = card.rank == Rank.ace;
-      final value = ace ? r.rules.aceMarriageValue : card.suit.marriageValue;
-      final name = ace ? 'тузовый марьяж' : 'марьяж ${card.suit.symbol}';
-      final answer = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Объявить $name?'),
-          content: Text(
-            '+$value очков${ace ? '' : ', ${card.suit.symbol} станет козырем'}.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Просто сходить'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Объявить'),
-            ),
-          ],
-        ),
-      );
-      if (answer == null) return;
-      declare = answer;
-    }
-    controller.play(card, declare: declare);
-  }
+  /// Leading with a marriage card declares it automatically.
+  void _playCard(Card card) =>
+      controller.play(card, declare: controller.round.canDeclareWith(me, card));
 
   // --- Dialogs ---
 
