@@ -4,6 +4,7 @@ library;
 export 'src/bidding.dart';
 export 'src/card.dart';
 export 'src/deal.dart';
+export 'src/game.dart';
 export 'src/hand.dart';
 export 'src/round.dart';
 export 'src/rules.dart';

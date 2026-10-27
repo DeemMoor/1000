@@ -15,12 +15,9 @@ class IllegalMoveException implements Exception {
 /// Auction ("торговля"). The player left of the dealer opens with a forced
 /// [GameRules.minBid]; the rest raise by [GameRules.bidStep] or pass for good.
 class Bidding {
-  Bidding({
-    required this.rules,
-    required this._hands,
-    required int dealer,
-  }) : highestBidder = nextPlayer(dealer),
-       highestBid = rules.minBid {
+  Bidding({required this.rules, required this._hands, required int dealer})
+    : highestBidder = nextPlayer(dealer),
+      highestBid = rules.minBid {
     current = nextPlayer(highestBidder);
   }
 

@@ -294,7 +294,9 @@ class Round {
       final made = points[declarer] >= contract;
       scores = [
         for (var p = 0; p < playerCount; p++)
-          p == declarer ? (made ? contract : -contract) : _roundPoints(points[p]),
+          p == declarer
+              ? (made ? contract : -contract)
+              : _roundPoints(points[p]),
       ];
     }
     result = RoundResult(

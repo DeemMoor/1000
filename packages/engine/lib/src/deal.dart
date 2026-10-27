@@ -18,14 +18,12 @@ class Deal {
   /// 7 cards each, then 3 to the prikup.
   factory Deal.fromDeck(List<Card> deck) {
     assert(deck.length == 24);
-    return Deal(
-      [for (var p = 0; p < playerCount; p++) deck.sublist(p * 7, p * 7 + 7)],
-      deck.sublist(21),
-    );
+    return Deal([
+      for (var p = 0; p < playerCount; p++) deck.sublist(p * 7, p * 7 + 7),
+    ], deck.sublist(21));
   }
 
-  factory Deal.random([Random? random]) =>
-      Deal.fromDeck(Deck.shuffled(random));
+  factory Deal.random([Random? random]) => Deal.fromDeck(Deck.shuffled(random));
 
   final List<List<Card>> hands;
   final List<Card> prikup;

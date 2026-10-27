@@ -27,10 +27,11 @@ void main() {
   });
 
   test('redeal on four nines in one hand', () {
-    final deal = Deal(
-      [cards('9H 9S 9D 9C AH'), cards('AS'), cards('AD')],
-      cards('10H 10S 10D'),
-    );
+    final deal = Deal([
+      cards('9H 9S 9D 9C AH'),
+      cards('AS'),
+      cards('AD'),
+    ], cards('10H 10S 10D'));
     expect(deal.redealReason(rules), RedealReason.fourNines);
     expect(
       deal.redealReason(const GameRules(redealOnFourNines: false)),
