@@ -22,7 +22,9 @@
 export PATH="$HOME/development/flutter/bin:$PATH"
 flutter pub get                      # зависимости для всего workspace
 (cd packages/engine && dart test)    # тесты движка
-(cd app && flutter run -d chrome)    # запуск клиента в браузере
+# клиент в браузере (release открывается быстро, debug через WSL грузится долго)
+(cd app && flutter build web && cd build/web && python3 -m http.server 8899)
+# затем открыть http://localhost:8899
 dart run server/bin/server.dart      # запуск сервера
 ```
 

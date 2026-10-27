@@ -634,12 +634,12 @@ class _GameScreenState extends State<GameScreen> {
 
   // --- Hand ---
 
-  /// Suits alternate colors; within a suit, strongest first.
+  /// Left to right: spades, clubs, diamonds, hearts; strongest first.
   static const _suitOrder = [
     Suit.spades,
-    Suit.hearts,
     Suit.clubs,
     Suit.diamonds,
+    Suit.hearts,
   ];
 
   Widget _hand(double cardWidth, double maxWidth, double lift) {
