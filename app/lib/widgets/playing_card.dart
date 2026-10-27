@@ -1,11 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:thousand_engine/thousand_engine.dart' as engine;
 
 import '../labels.dart';
+import '../settings.dart';
 
-const cardAspect = 1.45;
+/// Height to width, matching the 360×540 SVG decks.
+const cardAspect = 1.5;
 
-/// Face-up card. [dimmed] greys out cards that can't be played now.
+/// Rounded, shadowed frame shared by faces and backs.
+class _CardFrame extends StatelessWidget {
+  const _CardFrame({
+    required this.width,
+    required this.child,
+    this.highlighted = false,
+    this.dimmed = false,
+  });
+
+  final double width;
+  final Widget child;
+  final bool highlighted;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(width * 0.07);
+    return Container(
+      width: width,
+      height: width * cardAspect,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 3)],
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: radius,
+        color: dimmed ? Colors.black38 : null,
+        border: Border.all(
+          color: highlighted ? Colors.amber : Colors.black26,
+          width: highlighted ? 3 : 0.5,
+        ),
+      ),
+      child: ClipRRect(borderRadius: radius, child: child),
+    );
+  }
+}
+
+/// Face-up card in the deck chosen in [Settings]. [dimmed] darkens cards
+/// that can't be played now.
 class PlayingCard extends StatelessWidget {
   const PlayingCard(
     this.card, {
@@ -13,7 +54,7 @@ class PlayingCard extends StatelessWidget {
     required this.width,
     this.dimmed = false,
     this.highlighted = false,
-    this.tag,
+    this.style,
   });
 
   final engine.Card card;
@@ -21,8 +62,65 @@ class PlayingCard extends StatelessWidget {
   final bool dimmed;
   final bool highlighted;
 
-  /// Small label pinned under the card (e.g. who it's given to).
-  final String? tag;
+  /// Overrides the deck from settings (e.g. in the deck picker).
+  final CardStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final dir = (style ?? Settings.of(context).cardStyle).assetDir;
+    return _CardFrame(
+      width: width,
+      dimmed: dimmed,
+      highlighted: highlighted,
+      child: dir == null
+          ? _SimpleFace(card, width: width)
+          : SvgPicture.asset(
+              '$dir/${card.id}.svg',
+              width: width,
+              height: width * cardAspect,
+              fit: BoxFit.fill,
+            ),
+    );
+  }
+}
+
+class CardBack extends StatelessWidget {
+  const CardBack({super.key, required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final dir = Settings.of(context).cardStyle.assetDir;
+    return _CardFrame(
+      width: width,
+      child: dir == null
+          ? DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: width * 0.05),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            )
+          : SvgPicture.asset(
+              '$dir/back.svg',
+              width: width,
+              height: width * cardAspect,
+              fit: BoxFit.fill,
+            ),
+    );
+  }
+}
+
+/// Plain face with large indices: easy to read on small screens.
+class _SimpleFace extends StatelessWidget {
+  const _SimpleFace(this.card, {required this.width});
+
+  final engine.Card card;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -35,91 +133,35 @@ class PlayingCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
       height: 1,
     );
-    final face = Container(
-      width: width,
-      height: width * cardAspect,
-      decoration: BoxDecoration(
-        color: dimmed ? const Color(0xFFBDBDBD) : Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.09),
-        border: Border.all(
-          color: highlighted ? Colors.amber : Colors.black26,
-          width: highlighted ? 3 : 1,
-        ),
-        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 3)],
-      ),
-      padding: EdgeInsets.all(width * 0.07),
-      child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(rankLabel(card.rank), style: corner),
-                Text(card.suit.symbol, style: corner),
-              ],
-            ),
-          ),
-          Align(
-            alignment: const Alignment(0.3, 0.45),
-            child: Text(
-              card.suit.symbol,
-              style: TextStyle(color: color, fontSize: width * 0.55, height: 1),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (tag == null) return face;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        face,
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: -2,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(4),
+    return ColoredBox(
+      color: Colors.white,
+      child: Padding(
+        padding: EdgeInsets.all(width * 0.07),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topLeft,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(rankLabel(card.rank), style: corner),
+                  Text(card.suit.symbol, style: corner),
+                ],
               ),
+            ),
+            Align(
+              alignment: const Alignment(0.3, 0.45),
               child: Text(
-                tag!,
+                card.suit.symbol,
                 style: TextStyle(
-                  fontSize: width * 0.16,
-                  fontWeight: FontWeight.w600,
+                  color: color,
+                  fontSize: width * 0.55,
+                  height: 1,
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
-    );
-  }
-}
-
-class CardBack extends StatelessWidget {
-  const CardBack({super.key, required this.width});
-
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: width * cardAspect,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(width * 0.09),
-        border: Border.all(color: Colors.white, width: width * 0.05),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 3)],
       ),
     );
   }
@@ -133,7 +175,6 @@ class CardFan extends StatelessWidget {
     required this.cardWidth,
     required this.maxWidth,
     required this.itemBuilder,
-    this.lift = 0,
   });
 
   final int count;
@@ -141,20 +182,16 @@ class CardFan extends StatelessWidget {
   final double maxWidth;
   final Widget Function(BuildContext, int) itemBuilder;
 
-  /// Extra vertical room so items can be raised (e.g. selected cards).
-  final double lift;
-
   @override
   Widget build(BuildContext context) {
-    if (count == 0) return SizedBox(height: cardWidth * cardAspect + lift);
+    if (count == 0) return SizedBox(height: cardWidth * cardAspect);
     final natural = cardWidth * 1.05;
     final step = count == 1
         ? 0.0
         : ((maxWidth - cardWidth) / (count - 1)).clamp(0.0, natural);
-    final width = cardWidth + step * (count - 1);
     return SizedBox(
-      width: width,
-      height: cardWidth * cardAspect + lift,
+      width: cardWidth + step * (count - 1),
+      height: cardWidth * cardAspect,
       child: Stack(
         children: [
           for (var i = 0; i < count; i++)

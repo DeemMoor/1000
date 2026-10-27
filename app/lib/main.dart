@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/game_screen.dart';
+import 'screens/settings_screen.dart';
+import 'settings.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Phones: landscape, full screen. No effect on web and desktop.
   SystemChrome.setPreferredOrientations([
@@ -11,21 +13,26 @@ void main() {
     DeviceOrientation.landscapeRight,
   ]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  runApp(const ThousandApp());
+  runApp(ThousandApp(settings: await Settings.load()));
 }
 
 class ThousandApp extends StatelessWidget {
-  const ThousandApp({super.key});
+  const ThousandApp({super.key, required this.settings});
+
+  final Settings settings;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Тысяча',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B5E20)),
+    return SettingsScope(
+      settings: settings,
+      child: MaterialApp(
+        title: 'Тысяча',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B5E20)),
+        ),
+        home: const HomeScreen(),
       ),
-      home: const HomeScreen(),
     );
   }
 }
@@ -65,6 +72,15 @@ class HomeScreen extends StatelessWidget {
             const OutlinedButton(
               onPressed: null,
               child: Text('Онлайн — скоро'),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              ),
+              icon: const Icon(Icons.settings),
+              label: const Text('Настройки'),
             ),
           ],
         ),

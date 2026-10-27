@@ -5,7 +5,9 @@ import 'package:thousand_engine/thousand_engine.dart';
 
 import '../game_controller.dart';
 import '../labels.dart';
+import '../settings.dart';
 import '../widgets/playing_card.dart';
+import 'settings_screen.dart';
 
 const _felt = Color(0xFF1E7A2E);
 const _feltEdge = Color(0xFF0E4A17);
@@ -22,7 +24,13 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late final controller = widget.controller ?? GameController();
+  late final controller =
+      widget.controller ?? GameController(rules: Settings.of(context).rules);
+
+  void _newGame() {
+    _amount = null;
+    controller.newGame(rules: Settings.of(context).rules);
+  }
 
   /// Cards picked during the prikup exchange: first goes to the left
   /// player (next), second to the right one.
@@ -64,7 +72,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _table(double w, double h) {
-    final cardWidth = min(w / 9.5, h / 3.4).clamp(40.0, 120.0);
+    final cardWidth = min(w / 9.5, h / 3.4).clamp(40.0, 150.0);
     final cardHeight = cardWidth * cardAspect;
     // The hand sinks partly below the screen edge, like cards held in hand.
     final handVisible = cardHeight * 0.72;
@@ -264,6 +272,13 @@ class _GameScreenState extends State<GameScreen> {
       children: [
         button(Icons.list, 'Счёт', () => _showScores(context)),
         button(Icons.refresh, 'Новая игра', () => _confirmNewGame(context)),
+        button(
+          Icons.settings,
+          'Настройки',
+          () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+          ),
+        ),
         button(Icons.close, 'Выйти', () => Navigator.maybePop(context)),
       ],
     );
@@ -616,10 +631,7 @@ class _GameScreenState extends State<GameScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            FilledButton(
-              onPressed: controller.newGame,
-              child: const Text('Новая игра'),
-            ),
+            FilledButton(onPressed: _newGame, child: const Text('Новая игра')),
           ] else
             FilledButton(
               onPressed: controller.nextRound,
@@ -804,10 +816,7 @@ class _GameScreenState extends State<GameScreen> {
         ],
       ),
     );
-    if (ok ?? false) {
-      _amount = null;
-      controller.newGame();
-    }
+    if (ok ?? false) _newGame();
   }
 
   void _showScores(BuildContext context) {

@@ -12,7 +12,8 @@ class GameController extends ChangeNotifier {
     newGame();
   }
 
-  final GameRules rules;
+  /// Rules of the current game; [newGame] may switch them.
+  GameRules rules;
   final int human;
   final Bot _bot = Bot();
 
@@ -58,9 +59,10 @@ class GameController extends ChangeNotifier {
         RoundPhase.finished => false,
       };
 
-  void newGame() {
+  void newGame({GameRules? rules}) {
+    if (rules != null) this.rules = rules;
     _timer?.cancel();
-    game = Game(rules: rules, firstDealer: Random().nextInt(3));
+    game = Game(rules: this.rules, firstDealer: Random().nextInt(3));
     _finished = null;
     record = null;
     _startRound();

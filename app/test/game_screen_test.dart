@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thousand/game_controller.dart';
 import 'package:thousand/screens/game_screen.dart';
+import 'package:thousand/settings.dart';
 
 void main() {
   const sizes = {
@@ -20,7 +21,12 @@ void main() {
       addTearDown(tester.view.reset);
 
       final c = GameController();
-      await tester.pumpWidget(MaterialApp(home: GameScreen(controller: c)));
+      await tester.pumpWidget(
+        SettingsScope(
+          settings: Settings.defaults(),
+          child: MaterialApp(home: GameScreen(controller: c)),
+        ),
+      );
 
       var rounds = 0;
       for (var i = 0; i < 400 && rounds < 3 && !c.game.isOver; i++) {

@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thousand/main.dart';
+import 'package:thousand/settings.dart';
 
 void main() {
   testWidgets('home screen opens the game table', (tester) async {
-    await tester.pumpWidget(const ThousandApp());
+    await tester.pumpWidget(ThousandApp(settings: Settings.defaults()));
     expect(find.text('Тысяча'), findsOneWidget);
 
     await tester.tap(find.text('Играть с ботами'));
