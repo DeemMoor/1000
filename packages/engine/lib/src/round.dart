@@ -92,6 +92,10 @@ class Round {
 
   bool _conceded = false;
 
+  /// Cards the declarer passed on; only the declarer knows both.
+  Card? gaveToNext;
+  Card? gaveToPrev;
+
   Suit? trump;
 
   /// Cards on the table in the current trick, in play order.
@@ -146,6 +150,8 @@ class Round {
     hand
       ..remove(toNext)
       ..remove(toPrev);
+    gaveToNext = toNext;
+    gaveToPrev = toPrev;
     hands[nextPlayer(declarer)].add(toNext);
     hands[nextPlayer(nextPlayer(declarer))].add(toPrev);
     phase = RoundPhase.declaring;

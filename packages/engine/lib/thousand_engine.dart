@@ -2,6 +2,7 @@
 library;
 
 export 'src/bidding.dart';
+export 'src/bot.dart';
 export 'src/card.dart';
 export 'src/deal.dart';
 export 'src/game.dart';
