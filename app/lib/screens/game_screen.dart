@@ -6,12 +6,10 @@ import 'package:thousand_engine/thousand_engine.dart';
 import '../game_controller.dart';
 import '../labels.dart';
 import '../settings.dart';
+import '../widgets/marks.dart';
 import '../widgets/playing_card.dart';
+import '../widgets/table_ui.dart';
 import 'settings_screen.dart';
-
-const _felt = Color(0xFF1E7A2E);
-const _feltEdge = Color(0xFF0E4A17);
-const _gold = Color(0xFFF6C344);
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key, this.controller});
@@ -56,10 +54,7 @@ class _GameScreenState extends State<GameScreen> {
       builder: (context, _) {
         if (controller.round.phase != RoundPhase.exchange) _give.clear();
         return Scaffold(
-          body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(colors: [_felt, _feltEdge], radius: 1.2),
-            ),
+          body: FeltBackground(
             child: SafeArea(
               child: LayoutBuilder(
                 builder: (context, box) => _table(box.maxWidth, box.maxHeight),
@@ -210,13 +205,20 @@ class _GameScreenState extends State<GameScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _blackBox('${game.scores[seat]}', size: 16),
+            if (game.bolts[seat] + game.concessions[seat] > 0) ...[
+              const SizedBox(width: 6),
+              PenaltyMarks(
+                bolts: game.bolts[seat],
+                concessions: game.concessions[seat],
+              ),
+            ],
             if (game.onBarrel(seat)) ...[
               const SizedBox(width: 4),
-              _blackBox('бочка', size: 12, color: _gold),
+              _blackBox('бочка', size: 12, color: gold),
             ],
             if (badge != null) ...[
               const SizedBox(width: 6),
-              _blackBox(badge, size: 14, color: _gold),
+              _blackBox(badge, size: 14, color: gold),
             ],
           ],
         ),
@@ -224,7 +226,7 @@ class _GameScreenState extends State<GameScreen> {
         Text(
           controller.names[seat],
           style: TextStyle(
-            color: active ? _gold : Colors.white70,
+            color: active ? gold : Colors.white70,
             fontSize: 16,
             fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           ),
@@ -293,11 +295,11 @@ class _GameScreenState extends State<GameScreen> {
     } else if (controller.isHumanTurn) {
       if (r.phase == RoundPhase.playing) {
         text = 'Ваш ход';
-        color = _gold;
+        color = gold;
       } else if (r.phase == RoundPhase.exchange && _give.length < 2) {
         final to = controller.namesGenitive[_give.isEmpty ? left : right];
         text = 'Выберите карту для $to';
-        color = _gold;
+        color = gold;
       }
     } else if (controller.table.length < playerCount) {
       final seat = switch (r.phase) {
@@ -362,7 +364,7 @@ class _GameScreenState extends State<GameScreen> {
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _gold, fontSize: 15),
+              style: const TextStyle(color: gold, fontSize: 15),
             ),
           ),
       ],
@@ -386,47 +388,14 @@ class _GameScreenState extends State<GameScreen> {
     required double screenWidth,
     required String title,
     required List<Widget> children,
-  }) {
-    return Container(
-      width: min(440, screenWidth - 24),
-      decoration: const BoxDecoration(
-        boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 16)],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            color: const Color(0xFFE8E8E8),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ),
-          Container(
-            color: const Color(0xFF4A4A4A),
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-            child: Column(mainAxisSize: MainAxisSize.min, children: children),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _goldButton(String label, VoidCallback? onPressed) => FilledButton(
-    style: FilledButton.styleFrom(
-      backgroundColor: _gold,
-      foregroundColor: Colors.white,
-      disabledBackgroundColor: Colors.white24,
-      minimumSize: const Size(120, 44),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-    ),
-    onPressed: onPressed,
-    child: Text(label),
+  }) => TablePanel(
+    title: title,
+    width: min(440, screenWidth - 24),
+    children: children,
   );
+
+  Widget _goldButton(String label, VoidCallback? onPressed) =>
+      GoldButton(label, onPressed: onPressed);
 
   Widget _stepButton(String label, VoidCallback? onPressed) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -476,15 +445,7 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buttons(List<Widget> buttons) => Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 16,
-      runSpacing: 8,
-      children: buttons,
-    ),
-  );
+  Widget _buttons(List<Widget> buttons) => PanelButtons(buttons);
 
   Widget _biddingPanel(Round r, double screenWidth) {
     final b = r.bidding;
