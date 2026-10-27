@@ -1,0 +1,12 @@
+name: thousand_engine
+description: Rules engine for the card game 1000 (Тысяча). Pure Dart, shared by app and server.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.7
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
