@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thousand_engine/thousand_engine.dart';
 
+import 'card_images.dart';
+
 enum CardStyle {
   atlas('Атласная'),
   english('Английская'),
@@ -23,11 +25,26 @@ class Settings extends ChangeNotifier {
           CardStyle.atlas,
       _aceMarriage = _prefs?.getBool(_kAceMarriage) ?? false;
 
-  /// In-memory settings with defaults (tests, previews).
-  Settings.defaults() : this._(null);
+  /// In-memory settings with defaults (tests, previews). Card art is drawn
+  /// straight from vectors unless [preload] rasterizes the deck.
+  factory Settings.defaults({bool preload = false}) {
+    final settings = Settings._(null);
+    if (preload) settings._loadImages();
+    return settings;
+  }
 
   static Future<Settings> load() async =>
-      Settings._(await SharedPreferences.getInstance());
+      Settings._(await SharedPreferences.getInstance()).._loadImages();
+
+  /// Rasterized art of the current deck.
+  final CardImages images = CardImages();
+
+  void _loadImages() {
+    images
+      ..removeListener(notifyListeners)
+      ..addListener(notifyListeners)
+      ..load(cardStyle.assetDir);
+  }
 
   static const _kCards = 'cardStyle';
   static const _kAceMarriage = 'aceMarriage';
@@ -39,6 +56,7 @@ class Settings extends ChangeNotifier {
   set cardStyle(CardStyle value) {
     _cardStyle = value;
     _prefs?.setString(_kCards, value.name);
+    if (images.hasListeners) images.load(value.assetDir);
     notifyListeners();
   }
 

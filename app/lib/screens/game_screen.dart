@@ -8,6 +8,7 @@ import '../labels.dart';
 import '../settings.dart';
 import '../widgets/marks.dart';
 import '../widgets/playing_card.dart';
+import '../widgets/suit_icon.dart';
 import '../widgets/table_ui.dart';
 import 'settings_screen.dart';
 
@@ -235,23 +236,48 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  /// Contract line and a clear trump badge at the top of the table.
   Widget _roundInfo() {
     final r = controller.round;
-    final parts = [
-      if (r.phase != RoundPhase.bidding)
-        'Заказ: ${controller.names[r.declarer]} ${r.contract}',
-      if (r.trump != null) 'Козырь ${r.trump!.symbol}',
-    ];
-    if (parts.isEmpty) return const SizedBox.shrink();
-    return Center(
-      child: Text(
-        parts.join('   '),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+    final trump = r.trump;
+    return Column(
+      children: [
+        if (r.phase != RoundPhase.bidding)
+          Text(
+            'Заказ: ${controller.names[r.declarer]} ${r.contract}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        if (trump != null) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'КОЗЫРЬ',
+                  style: TextStyle(
+                    color: gold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SuitChip(trump, size: 30),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -361,7 +387,7 @@ class _GameScreenState extends State<GameScreen> {
         if (message != null)
           Align(
             alignment: Alignment.topCenter,
-            child: Text(
+            child: SuitText(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(color: gold, fontSize: 15),
@@ -515,8 +541,9 @@ class _GameScreenState extends State<GameScreen> {
       screenWidth: screenWidth,
       title: 'Отдать карты',
       children: [
-        Text('${cardLabel(_give[0])} → ${names[left]}', style: style),
-        Text('${cardLabel(_give[1])} → ${names[right]}', style: style),
+        SuitText('${cardLabel(_give[0])} → ${names[left]}', style: style),
+        const SizedBox(height: 6),
+        SuitText('${cardLabel(_give[1])} → ${names[right]}', style: style),
         _buttons([
           _goldButton('Заново', () => setState(_give.clear)),
           _goldButton('Отдать', () => controller.giveCards(_give[0], _give[1])),

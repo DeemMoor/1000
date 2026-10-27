@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+
+import 'dart:ui' as ui;
+
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:vector_graphics/vector_graphics.dart';
 import 'package:thousand_engine/thousand_engine.dart' as engine;
 
 import '../labels.dart';
 import '../settings.dart';
+import 'suit_icon.dart';
 
 /// Height to width, matching the 360×540 SVG decks.
 const cardAspect = 1.5;
@@ -67,18 +72,19 @@ class PlayingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dir = (style ?? Settings.of(context).cardStyle).assetDir;
+    final settings = Settings.of(context);
+    final deck = style ?? settings.cardStyle;
+    final dir = deck.assetDir;
     return _CardFrame(
       width: width,
       dimmed: dimmed,
       highlighted: highlighted,
       child: dir == null
           ? _SimpleFace(card, width: width)
-          : SvgPicture.asset(
+          : _art(
+              deck == settings.cardStyle ? settings.images.face(card) : null,
               '$dir/${card.id}.svg',
-              width: width,
-              height: width * cardAspect,
-              fit: BoxFit.fill,
+              width,
             ),
     );
   }
@@ -91,7 +97,8 @@ class CardBack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dir = Settings.of(context).cardStyle.assetDir;
+    final settings = Settings.of(context);
+    final dir = settings.cardStyle.assetDir;
     return _CardFrame(
       width: width,
       child: dir == null
@@ -105,15 +112,26 @@ class CardBack extends StatelessWidget {
                 ),
               ),
             )
-          : SvgPicture.asset(
-              '$dir/back.svg',
-              width: width,
-              height: width * cardAspect,
-              fit: BoxFit.fill,
-            ),
+          : _art(settings.images.back, '$dir/back.svg', width),
     );
   }
 }
+
+/// Cached raster if the deck is loaded, else the compiled vector asset.
+Widget _art(ui.Image? image, String asset, double width) => image != null
+    ? RawImage(
+        image: image,
+        width: width,
+        height: width * cardAspect,
+        fit: BoxFit.fill,
+        filterQuality: FilterQuality.medium,
+      )
+    : SvgPicture(
+        AssetBytesLoader(asset),
+        width: width,
+        height: width * cardAspect,
+        fit: BoxFit.fill,
+      );
 
 /// Plain face with large indices: easy to read on small screens.
 class _SimpleFace extends StatelessWidget {
@@ -145,20 +163,14 @@ class _SimpleFace extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(rankLabel(card.rank), style: corner),
-                  Text(card.suit.symbol, style: corner),
+                  SizedBox(height: width * 0.03),
+                  SuitIcon(card.suit, size: width * 0.2),
                 ],
               ),
             ),
             Align(
               alignment: const Alignment(0.3, 0.45),
-              child: Text(
-                card.suit.symbol,
-                style: TextStyle(
-                  color: color,
-                  fontSize: width * 0.55,
-                  height: 1,
-                ),
-              ),
+              child: SuitIcon(card.suit, size: width * 0.5),
             ),
           ],
         ),
