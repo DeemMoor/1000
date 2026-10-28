@@ -23,7 +23,8 @@ class Settings extends ChangeNotifier {
     : _cardStyle =
           CardStyle.values.asNameMap()[_prefs?.getString(_kCards)] ??
           CardStyle.atlas,
-      _aceMarriage = _prefs?.getBool(_kAceMarriage) ?? false;
+      _aceMarriage = _prefs?.getBool(_kAceMarriage) ?? false,
+      _checkUpdates = _prefs?.getBool(_kCheckUpdates) ?? true;
 
   /// In-memory settings with defaults (tests, previews). Card art is drawn
   /// straight from vectors unless [preload] rasterizes the deck.
@@ -48,6 +49,8 @@ class Settings extends ChangeNotifier {
 
   static const _kCards = 'cardStyle';
   static const _kAceMarriage = 'aceMarriage';
+  static const _kCheckUpdates = 'checkUpdates';
+  static const _kLastUpdateCheck = 'lastUpdateCheck';
 
   final SharedPreferences? _prefs;
 
@@ -66,6 +69,28 @@ class Settings extends ChangeNotifier {
     _aceMarriage = value;
     _prefs?.setBool(_kAceMarriage, value);
     notifyListeners();
+  }
+
+  /// Look for a new release once a day at startup.
+  bool get checkUpdates => _checkUpdates;
+  bool _checkUpdates;
+  set checkUpdates(bool value) {
+    _checkUpdates = value;
+    _prefs?.setBool(_kCheckUpdates, value);
+    notifyListeners();
+  }
+
+  DateTime? get lastUpdateCheck {
+    final ms = _prefs?.getInt(_kLastUpdateCheck);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  set lastUpdateCheck(DateTime? value) {
+    if (value == null) {
+      _prefs?.remove(_kLastUpdateCheck);
+    } else {
+      _prefs?.setInt(_kLastUpdateCheck, value.millisecondsSinceEpoch);
+    }
   }
 
   /// Rules for a new game.

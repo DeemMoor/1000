@@ -28,6 +28,15 @@ flutter pub get                      # зависимости для всего 
 dart run server/bin/server.dart      # запуск сервера
 ```
 
+## Выпуск версии
+
+Подробно — в [docs/RELEASE-GUIDE.md](docs/RELEASE-GUIDE.md). Коротко:
+
+1. Изменения, заметные игроку, записываются в `CHANGELOG.md` в раздел «Не выпущено» тем же коммитом, что и код.
+2. Для выпуска раздел переименовывается в `## X.Y.Z — ГГГГ-ММ-ДД`, в `app/pubspec.yaml` ставится `version: X.Y.Z+1`.
+3. `git tag vX.Y.Z && git push origin main vX.Y.Z` — GitHub Actions соберёт установщик Windows, APK, `.dmg`, `.tar.gz` и опубликует релиз.
+4. Игра сама найдёт новую версию: на Windows ставит её одной кнопкой, на Android скачивает APK.
+
 ---
 
 # Правила игры

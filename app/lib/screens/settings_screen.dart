@@ -3,7 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:thousand_engine/thousand_engine.dart' as engine;
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../settings.dart';
+import '../update/update_controller.dart';
+import '../widgets/update_dialog.dart';
 import '../widgets/playing_card.dart';
 import '../widgets/table_ui.dart';
 
@@ -77,6 +81,11 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (UpdateController.maybeOf(context) case final updates?
+                      when updates.supported) ...[
+                    const SizedBox(height: 24),
+                    _UpdatesPanel(updates),
+                  ],
                 ],
               ),
             ),
@@ -200,6 +209,67 @@ class _DeckPickerState extends State<DeckPicker> {
           ]),
         ],
       ),
+    );
+  }
+}
+
+class _UpdatesPanel extends StatelessWidget {
+  const _UpdatesPanel(this.updates);
+
+  final UpdateController updates;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = Settings.of(context);
+    final available = updates.available;
+    final String status;
+    if (updates.checking) {
+      status = 'Проверяю…';
+    } else if (updates.error != null) {
+      status = updates.error!;
+    } else if (available != null) {
+      status = 'Вышла версия ${available.version}';
+    } else if (settings.lastUpdateCheck != null) {
+      status = 'У вас последняя версия';
+    } else {
+      status = 'Ещё не проверялось';
+    }
+
+    return TablePanel(
+      title: 'Обновления',
+      padding: EdgeInsets.zero,
+      children: [
+        FutureBuilder(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, info) => _Row(
+            title: available != null
+                ? 'Установить обновление'
+                : 'Проверить сейчас',
+            subtitle: 'Версия ${info.data?.version ?? '…'}. $status',
+            trailing: Icon(
+              available != null ? Icons.system_update : Icons.refresh,
+              color: available != null ? gold : Colors.white,
+            ),
+            onTap: available != null
+                ? () => showDialog<void>(
+                    context: context,
+                    builder: (_) => const UpdateDialog(),
+                  )
+                : updates.checkNow,
+          ),
+        ),
+        _Row(
+          title: 'Проверять обновления',
+          subtitle: 'Раз в день при запуске',
+          trailing: Switch(
+            activeThumbColor: Colors.white,
+            activeTrackColor: gold,
+            value: settings.checkUpdates,
+            onChanged: (v) => settings.checkUpdates = v,
+          ),
+          onTap: () => settings.checkUpdates = !settings.checkUpdates,
+        ),
+      ],
     );
   }
 }

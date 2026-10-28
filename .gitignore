@@ -2,3 +2,11 @@
 build/
 .idea/
 *.iml
+
+# Android signing
+*.jks
+*.keystore
+key.properties
+
+# Release output
+dist/

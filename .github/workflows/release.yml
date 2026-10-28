@@ -1,0 +1,177 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: 3.47.8
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        name: Tag, version and changelog agree
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          app=$(sed -n 's/^version: *\([^+]*\).*/\1/p' app/pubspec.yaml)
+          [ "$app" = "$version" ] || { echo "::error::Tag $GITHUB_REF_NAME does not match app/pubspec.yaml version $app"; exit 1; }
+          awk -v v="$version" '/^## /{p = ($2 == v); next} p' CHANGELOG.md > notes.md
+          grep -q "[^[:space:]]" notes.md || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Engine tests
+        working-directory: packages/engine
+        run: dart test
+      - name: App tests
+        working-directory: app
+        run: flutter test
+
+  windows:
+    needs: check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Build
+        working-directory: app
+        run: flutter build windows --release --build-number=${{ github.run_number }}
+      # Flutter needs the VC++ runtime; ship it next to the exe so users don't have to install it.
+      - name: Bundle VC++ runtime
+        shell: pwsh
+        run: Copy-Item C:\Windows\System32\msvcp140.dll, C:\Windows\System32\vcruntime140.dll, C:\Windows\System32\vcruntime140_1.dll app\build\windows\x64\runner\Release\
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          & $iscc.FullName "/DVersion=${{ needs.check.outputs.version }}" packaging\windows\installer.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: dist/*
+          if-no-files-found: error
+
+  macos:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Build
+        working-directory: app
+        run: flutter build macos --release --build-number=${{ github.run_number }}
+      - name: DMG
+        run: |
+          mkdir -p dist staging
+          cp -R app/build/macos/Build/Products/Release/thousand.app staging/
+          ln -s /Applications staging/Applications
+          hdiutil create -volname "Тысяча" -srcfolder staging -ov -format UDZO \
+            "dist/thousand-${{ needs.check.outputs.version }}-macos.dmg"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: dist/*
+          if-no-files-found: error
+
+  linux:
+    needs: check
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Build
+        working-directory: app
+        run: flutter build linux --release --build-number=${{ github.run_number }}
+      - name: Archive
+        run: |
+          mkdir -p dist
+          tar -czf "dist/thousand-${{ needs.check.outputs.version }}-linux-x64.tar.gz" -C app/build/linux/x64/release/bundle .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # A release must never ship a debug-signed APK: it would not install over the previous one.
+          [ -n "$KEYSTORE" ] || { echo "::error::ANDROID_KEYSTORE secret is not set"; exit 1; }
+          echo "$KEYSTORE" | base64 -d > app/android/app/upload.jks
+          printf 'storeFile=upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' \
+            "$STORE_PASSWORD" "$KEY_PASSWORD" > app/android/key.properties
+      - run: flutter pub get
+      - name: Build
+        working-directory: app
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+      - run: |
+          mkdir -p dist
+          cp app/build/app/outputs/flutter-apk/app-release.apk "dist/thousand-${{ needs.check.outputs.version }}.apk"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: [check, windows, macos, linux, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Release notes
+        run: awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = ($2 == v); next} p' CHANGELOG.md > notes.md
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          body_path: notes.md
