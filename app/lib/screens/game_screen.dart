@@ -134,14 +134,19 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   /// Bid call during the auction, contract while declaring, tricks in play.
+  /// Auction call while bidding; during play, points taken so far
+  /// (tricks plus marriages) — the declarer also sees the contract.
   String? _badge(int seat) {
     final r = controller.round;
     return switch (r.phase) {
       RoundPhase.bidding => controller.bidCalls[seat],
       RoundPhase.exchange ||
       RoundPhase.declaring => r.declarer == seat ? '${r.contract}' : null,
-      RoundPhase.playing || RoundPhase.finished =>
-        r.tricks[seat] == 0 ? null : 'взяток: ${r.tricks[seat]}',
+      RoundPhase.playing || RoundPhase.finished => () {
+        final points = r.taken[seat].points + r.declared[seat];
+        final goal = seat == r.declarer ? '/${r.contract}' : '';
+        return 'набрано $points$goal · взяток ${r.tricks[seat]}';
+      }(),
     };
   }
 
@@ -585,9 +590,9 @@ class _GameScreenState extends State<GameScreen> {
               const TableRow(
                 children: [
                   Text(''),
-                  Text('Очки', style: bold),
-                  Text('±', style: bold),
-                  Text('Итого', style: bold),
+                  Text('Набрано', style: bold),
+                  Text('Записано', style: bold),
+                  Text('Счёт', style: bold),
                 ],
               ),
               for (var p = 0; p < playerCount; p++)
