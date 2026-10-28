@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.deemmoor.thousand" "\0"
-            VALUE "FileDescription", "thousand" "\0"
+            VALUE "FileDescription", "Thousand (1000) card game" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "thousand" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.deemmoor.thousand. All rights reserved." "\0"
             VALUE "OriginalFilename", "thousand.exe" "\0"
-            VALUE "ProductName", "thousand" "\0"
+            VALUE "ProductName", "Thousand (1000)" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

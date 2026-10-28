@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.8
+          cache: true
+      - run: flutter pub get
+      - name: Engine tests
+        working-directory: packages/engine
+        run: dart test
+      - name: App tests
+        working-directory: app
+        run: flutter test
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.8
+          cache: true
+      - run: flutter pub get
+      - name: Build
+        working-directory: app
+        run: flutter build windows --release
+      - name: Package
+        shell: pwsh
+        run: Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath Thousand-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Thousand-windows
+          path: Thousand-windows.zip
