@@ -58,12 +58,30 @@ class _GameScreenState extends State<GameScreen> {
           body: FeltBackground(
             child: SafeArea(
               child: LayoutBuilder(
-                builder: (context, box) => _table(box.maxWidth, box.maxHeight),
+                builder: (context, box) => _fitted(box.maxWidth, box.maxHeight),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  /// Smallest area the table is laid out for; anything smaller (a narrow
+  /// browser window) gets the whole table scaled down instead of overlapping.
+  static const _minWidth = 640.0;
+  static const _minHeight = 360.0;
+
+  Widget _fitted(double w, double h) {
+    if (w >= _minWidth && h >= _minHeight) return _table(w, h);
+    final width = max(w, _minWidth);
+    final height = max(h, _minHeight);
+    return FittedBox(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: _table(width, height),
+      ),
     );
   }
 

@@ -10,6 +10,7 @@ void main() {
     'small phone landscape': Size(640, 360),
     'tablet': Size(1280, 800),
     'phone portrait': Size(390, 844),
+    'tiny window': Size(360, 220),
   };
   for (final MapEntry(key: name, value: size) in sizes.entries) {
     testWidgets('plays whole rounds without layout errors: $name', (

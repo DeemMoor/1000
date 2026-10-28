@@ -33,6 +33,10 @@ using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
 // Scale helper to convert logical scaler values to physical using passed in
 // scale factor
+// Smallest client area, in logical pixels, at which the table still fits.
+constexpr int kMinWidth = 800;
+constexpr int kMinHeight = 480;
+
 int Scale(int source, double scale_factor) {
   return static_cast<int>(source * scale_factor);
 }
@@ -195,6 +199,18 @@ Win32Window::MessageHandler(HWND hwnd,
       SetWindowPos(hwnd, nullptr, newRectSize->left, newRectSize->top, newWidth,
                    newHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 
+      return 0;
+    }
+    case WM_GETMINMAXINFO: {
+      UINT dpi = FlutterDesktopGetDpiForMonitor(
+          MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST));
+      double scale_factor = dpi / 96.0;
+      RECT frame = {0, 0, Scale(kMinWidth, scale_factor),
+                    Scale(kMinHeight, scale_factor)};
+      AdjustWindowRect(&frame, GetWindowLong(hwnd, GWL_STYLE), FALSE);
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      info->ptMinTrackSize.x = frame.right - frame.left;
+      info->ptMinTrackSize.y = frame.bottom - frame.top;
       return 0;
     }
     case WM_SIZE: {
